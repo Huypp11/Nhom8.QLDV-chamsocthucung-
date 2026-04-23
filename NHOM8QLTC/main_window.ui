@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>600</width>
+    <height>400</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Quản Lý Dịch Vụ Chăm Sóc Thú Cưng</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="mainLayout">
+    <item>
+     <layout class="QVBoxLayout" name="sidebarLayout">
+      <item>
+       <widget class="QLabel" name="titleLabel">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>QUẢN LÝ DỊCH VỤ
+CHĂM SÓC THÚ CƯNG</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_customer">
+        <property name="text">
+         <string>👥 Khách Hàng</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_pet">
+        <property name="text">
+         <string>🐾 Thú Cưng</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_service">
+        <property name="text">
+         <string>🛁 Dịch Vụ</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_appointment">
+        <property name="text">
+         <string>📅 Lịch Hẹn</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_invoice">
+        <property name="text">
+         <string>💰 Thanh Toán</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_statistics">
+        <property name="text">
+         <string>📊 Thống Kê</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="sidebarSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="stacked_widget">
+      <property name="currentIndex">
+       <number>4</number>
+      </property>
+      <widget class="QWidget" name="page_customer">
+       <layout class="QVBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_customer">
+          <property name="text">
+           <string>Trang Quản Lý Khách Hàng</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_pet">
+       <layout class="QVBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_pet">
+          <property name="text">
+           <string>Trang Quản Lý Thú Cưng</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_service">
+       <layout class="QVBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_service">
+          <property name="text">
+           <string>Trang Quản Lý Dịch Vụ</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_appointment">
+       <layout class="QVBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_appointment">
+          <property name="text">
+           <string>Trang Quản Lý Lịch Hẹn</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_invoice">
+       <layout class="QVBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_invoice">
+          <property name="text">
+           <string>Trang Quản Lý Thanh Toán</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_statistics">
+       <layout class="QVBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_statistics">
+          <property name="text">
+           <string>Trang Thống Kê</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
