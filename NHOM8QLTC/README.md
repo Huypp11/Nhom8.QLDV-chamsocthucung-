@@ -1,4 +1,4 @@
-# 🐾 Quản Lý Cửa Hàng Chăm Sóc Thú Cưng
+#  Quản Lý Cửa Hàng Chăm Sóc Thú Cưng
 
 ## Cấu trúc dự án (Mô hình 3 tầng)
 
