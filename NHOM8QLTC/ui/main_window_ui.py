@@ -35,6 +35,8 @@ class Ui_MainWindow(object):
         self.btn_pet.setMinimumHeight(40)
         self.btn_service = QtWidgets.QPushButton("🛁 Dịch Vụ")
         self.btn_service.setMinimumHeight(40)
+        self.btn_product = QtWidgets.QPushButton("📦 Sản Phẩm")
+        self.btn_product.setMinimumHeight(40)
         self.btn_appointment = QtWidgets.QPushButton("📅 Lịch Hẹn")
         self.btn_appointment.setMinimumHeight(40)
         self.btn_invoice = QtWidgets.QPushButton("💰 Thanh Toán")
@@ -43,7 +45,7 @@ class Ui_MainWindow(object):
         self.btn_statistics.setMinimumHeight(40)
 
         for btn in [self.btn_customer, self.btn_pet, self.btn_service,
-                    self.btn_appointment, self.btn_invoice, self.btn_statistics]:
+                    self.btn_product, self.btn_appointment, self.btn_invoice, self.btn_statistics]:
             self.sidebarLayout.addWidget(btn)
 
         self.sidebarLayout.addStretch()

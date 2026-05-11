@@ -16,6 +16,7 @@ from ui.main_window_ui import Ui_MainWindow
 from views.customer_view import CustomerView
 from views.pet_view import PetView
 from views.service_view import ServiceView
+from views.product_view import ProductView          # <-- MỚI
 from views.appointment_view import AppointmentView
 from views.invoice_view import InvoiceView
 from views.statistics_view import StatisticsView
@@ -30,12 +31,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.customer_view    = CustomerView()
         self.pet_view         = PetView()
         self.service_view     = ServiceView()
+        self.product_view     = ProductView()        # <-- MỚI
         self.appointment_view = AppointmentView()
         self.invoice_view     = InvoiceView()
         self.statistics_view  = StatisticsView()
 
         # Thêm vào stacked widget
         for view in [self.customer_view, self.pet_view, self.service_view,
+                     self.product_view,                                     # <-- MỚI
                      self.appointment_view, self.invoice_view, self.statistics_view]:
             self.stacked_widget.addWidget(view)
 
@@ -43,6 +46,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.btn_customer.clicked.connect(self._show_customer)
         self.btn_pet.clicked.connect(self._show_pet)
         self.btn_service.clicked.connect(self._show_service)
+        self.btn_product.clicked.connect(self._show_product)   # <-- MỚI (xem ghi chú bên dưới)
         self.btn_appointment.clicked.connect(self._show_appointment)
         self.btn_invoice.clicked.connect(self._show_invoice)
         self.btn_statistics.clicked.connect(self._show_statistics)
@@ -55,13 +59,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.statusbar.showMessage("Quản lý khách hàng")
 
     def _show_pet(self):
-        self.pet_view.load_customers()  # Cập nhật danh sách khách hàng
+        self.pet_view.load_customers()
         self.stacked_widget.setCurrentWidget(self.pet_view)
         self.statusbar.showMessage("Quản lý thú cưng")
 
     def _show_service(self):
         self.stacked_widget.setCurrentWidget(self.service_view)
         self.statusbar.showMessage("Quản lý dịch vụ")
+
+    def _show_product(self):                                     # <-- MỚI
+        self.product_view.load_data()
+        self.stacked_widget.setCurrentWidget(self.product_view)
+        self.statusbar.showMessage("Quản lý sản phẩm")
 
     def _show_appointment(self):
         self.stacked_widget.setCurrentWidget(self.appointment_view)

@@ -69,8 +69,30 @@ def init_db():
             created_at     TEXT DEFAULT (datetime('now','localtime')),
             FOREIGN KEY (appointment_id) REFERENCES appointments(id)
         );
+
+        -- BẢNG MỚI: Sản phẩm bán lẻ
+        CREATE TABLE IF NOT EXISTS products (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL,
+            description TEXT,
+            price       REAL NOT NULL DEFAULT 0,
+            category    TEXT DEFAULT 'Khác',
+            stock       INTEGER DEFAULT 0
+        );
+
+        -- BẢNG MỚI: Chi tiết từng dòng trong hóa đơn (dịch vụ hoặc sản phẩm)
+        CREATE TABLE IF NOT EXISTS invoice_items (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_id  INTEGER NOT NULL,
+            item_type   TEXT NOT NULL CHECK(item_type IN ('service', 'product')),
+            item_id     INTEGER NOT NULL,
+            item_name   TEXT NOT NULL,
+            quantity    INTEGER NOT NULL DEFAULT 1,
+            unit_price  REAL NOT NULL DEFAULT 0,
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id)
+        );
     """)
 
     conn.commit()
     conn.close()
-    print("✅ Database đã khởi tạo thành công!")
+    print("Database đã khởi tạo thành công!")

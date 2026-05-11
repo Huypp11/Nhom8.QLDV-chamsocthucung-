@@ -63,6 +63,13 @@ CHĂM SÓC THÚ CƯNG</string>
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="btn_product">
+        <property name="text">
+         <string>📦 Sản Phẩm</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="btn_appointment">
         <property name="text">
          <string>📅 Lịch Hẹn</string>
