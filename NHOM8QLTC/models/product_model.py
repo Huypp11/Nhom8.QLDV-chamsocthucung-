@@ -1,5 +1,5 @@
 """
-Tầng 2 - MODEL: Xử lý dữ liệu sản phẩm
+Tang 2 - MODEL: Xu ly du lieu san pham
 """
 from database.db_manager import get_connection
 
@@ -16,7 +16,7 @@ class ProductModel:
         conn = get_connection()
         rows = conn.execute(
             "SELECT * FROM products WHERE name LIKE ? OR description LIKE ? OR category LIKE ?",
-            (f"%{keyword}%", f"%{keyword}%", f"%{keyword}%")
+            (f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"),
         ).fetchall()
         conn.close()
         return [dict(r) for r in rows]
@@ -25,7 +25,7 @@ class ProductModel:
         conn = get_connection()
         conn.execute(
             "INSERT INTO products (name, description, price, category, stock) VALUES (?, ?, ?, ?, ?)",
-            (name, description, price, category, stock)
+            (name, description, price, category, stock),
         )
         conn.commit()
         conn.close()
@@ -34,7 +34,7 @@ class ProductModel:
         conn = get_connection()
         conn.execute(
             "UPDATE products SET name=?, description=?, price=?, category=?, stock=? WHERE id=?",
-            (name, description, price, category, stock, product_id)
+            (name, description, price, category, stock, product_id),
         )
         conn.commit()
         conn.close()

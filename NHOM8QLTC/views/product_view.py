@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QComboBox, QLineEdit
                              QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
                              QMessageBox, QAbstractItemView, QHeaderView)
 from PyQt5.QtCore import Qt
-from models.product_model import ProductModel
+from models.Product_model import ProductModel
 
 CATEGORIES = ["Sữa tắm", "Thức ăn", "Phụ kiện", "Đồ chơi", "Khác"]
 

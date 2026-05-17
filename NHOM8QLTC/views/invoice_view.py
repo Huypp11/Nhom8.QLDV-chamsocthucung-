@@ -4,13 +4,13 @@ Tầng 3 - VIEW: Giao diện quản lý hóa đơn (có tích hợp sản phẩm
 from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QComboBox, QDoubleSpinBox,
                              QSpinBox, QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
                              QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox,
-                             QAbstractItemView, QSplitter, QHeaderView)
+                             QAbstractItemView, QSplitter, QHeaderView, QLineEdit)
 from PyQt5.QtCore import Qt
 from ui.invoice_ui import Ui_InvoiceWidget
 from models.invoice_model import InvoiceModel
 from models.customer_model import CustomerModel
 from models.appointment_model import AppointmentModel
-from models.product_model import ProductModel
+from models.Product_model import ProductModel
 from models.service_model import ServiceModel
 
 
@@ -21,6 +21,11 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
         self.model = InvoiceModel()
         self.customer_model = CustomerModel()
         self._customer_ids = []
+        self._customers = []
+        self.customer_search_input = QLineEdit()
+        self.customer_search_input.setPlaceholderText("Tim theo ten hoac so dien thoai...")
+        self.customer_search_input.setMinimumWidth(280)
+        self.filterLayout.insertWidget(1, self.customer_search_input)
         self._connect_signals()
         self._load_customers()
         self.load_data()
@@ -30,16 +35,43 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
         self.view_btn.clicked.connect(self.view_invoice)
         self.export_btn.clicked.connect(self.export_invoice)
         self.filter_btn.clicked.connect(self.load_data)
+        self.customer_search_input.returnPressed.connect(self.load_data)
+        self.customer_search_input.textChanged.connect(self._filter_customer_combo)
 
     def _load_customers(self):
+        self._customers = self.customer_model.get_all()
         self.customer_combo.clear()
         self._customer_ids = [None]
         self.customer_combo.addItem("-- Tất cả --")
-        for c in self.customer_model.get_all():
-            self.customer_combo.addItem(c["name"])
+        for c in self._customers:
+            phone = c.get("phone") or "Chua co SDT"
+            self.customer_combo.addItem(f"{c['name']} - {phone}")
             self._customer_ids.append(c["id"])
 
+    def _filter_customer_combo(self):
+        keyword = self.customer_search_input.text().strip().lower()
+        matched = [
+            c for c in self._customers
+            if keyword in (c.get("name") or "").lower()
+            or keyword in (c.get("phone") or "").lower()
+        ] if keyword else self._customers
+
+        self.customer_combo.blockSignals(True)
+        self.customer_combo.clear()
+        self._customer_ids = [None]
+        self.customer_combo.addItem("-- Tat ca --")
+        for c in matched:
+            phone = c.get("phone") or "Chua co SDT"
+            self.customer_combo.addItem(f"{c['name']} - {phone}")
+            self._customer_ids.append(c["id"])
+        self.customer_combo.blockSignals(False)
+
     def load_data(self):
+        keyword = self.customer_search_input.text().strip()
+        if keyword:
+            self._fill_table(self.model.search_by_customer(keyword))
+            return
+
         idx = self.customer_combo.currentIndex()
         cid = self._customer_ids[idx] if idx < len(self._customer_ids) else None
         rows = self.model.get_by_customer(cid) if cid else self.model.get_all()
@@ -52,7 +84,7 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
             self.table.insertRow(r)
             values = [
                 str(row.get("id", "")),
-                str(row.get("appointment_id", "")),
+                str(row.get("appointment_id") or "Truc tiep"),
                 str(row.get("customer_name", "")),
                 f"{row.get('total_amount', 0):,.0f} đ",
                 str(row.get("payment_method", "")),
@@ -75,17 +107,24 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
         dialog = InvoiceDialog(self)
         if dialog.exec_() == QDialog.Accepted:
             data = dialog.get_data()
-            if not data["appointment_id"]:
+            if not data["appointment_id"] and not data["customer_id"]:
+                QMessageBox.warning(self, "Loi", "Vui long chon lich hen hoac khach hang truc tiep!")
+                return
                 QMessageBox.warning(self, "Lỗi", "Vui lòng chọn lịch hẹn!")
                 return
             if not data["items"]:
                 QMessageBox.warning(self, "Lỗi", "Hóa đơn phải có ít nhất 1 dịch vụ hoặc sản phẩm!")
                 return
-            invoice_id = self.model.add_full(
-                data["appointment_id"],
-                data["payment_method"],
-                data["items"]
-            )
+            try:
+                invoice_id = self.model.add_full(
+                    data["appointment_id"],
+                    data["payment_method"],
+                    data["items"],
+                    data["customer_id"]
+                )
+            except ValueError as exc:
+                QMessageBox.warning(self, "Khong du ton kho", str(exc))
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công",
                                     f"Đã tạo hóa đơn #{invoice_id} thành công!")
@@ -151,8 +190,12 @@ class InvoiceDialog(QDialog):
         self.setWindowTitle("Tạo Hóa Đơn")
         self.setMinimumSize(700, 580)
         self._appointment_ids = []
+        self._appointments = []
+        self._customer_ids = []
+        self._customers = []
         self._items = []          # list of dict: item_type, item_id, item_name, quantity, unit_price
         self._setup_ui()
+        self._load_customers()
         self._load_appointments()
         self._load_services()
         self._load_products()
@@ -164,12 +207,27 @@ class InvoiceDialog(QDialog):
         # ── Chọn lịch hẹn & thanh toán ──
         info_group = QGroupBox("Thông tin chung")
         info_form  = QFormLayout(info_group)
+        self.invoice_mode_combo = QComboBox()
+        self.invoice_mode_combo.addItems(["Theo lich hen", "Khach truc tiep"])
+        self.invoice_mode_combo.currentIndexChanged.connect(self._toggle_invoice_mode)
+        self.appointment_search_input = QLineEdit()
+        self.appointment_search_input.setPlaceholderText("Tim lich hen theo ten khach hoac so dien thoai...")
+        self.appointment_search_input.textChanged.connect(self._filter_appointments)
         self.appointment_combo = QComboBox()
+        self.customer_search_input = QLineEdit()
+        self.customer_search_input.setPlaceholderText("Tim khach theo ten hoac so dien thoai...")
+        self.customer_search_input.textChanged.connect(self._filter_customers)
+        self.customer_combo = QComboBox()
         self.payment_combo     = QComboBox()
+        info_form.addRow("Loai hoa don:", self.invoice_mode_combo)
+        info_form.addRow("Tim khach:", self.appointment_search_input)
         self.payment_combo.addItems(["Tiền mặt", "Chuyển khoản", "Thẻ tín dụng"])
         info_form.addRow("Lịch hẹn *:",        self.appointment_combo)
         info_form.addRow("Phương thức TT:",     self.payment_combo)
+        info_form.addRow("Tim KH truc tiep:", self.customer_search_input)
+        info_form.addRow("Khach truc tiep:", self.customer_combo)
         main_layout.addWidget(info_group)
+        self._toggle_invoice_mode()
 
         # ── Splitter: trái = chọn hàng, phải = giỏ hóa đơn ──
         splitter = QSplitter(Qt.Horizontal)
@@ -254,14 +312,55 @@ class InvoiceDialog(QDialog):
         main_layout.addLayout(btn_layout)
 
     # ---------------------------------------------------- Load combo data --
+    def _toggle_invoice_mode(self):
+        direct_mode = self.invoice_mode_combo.currentIndex() == 1
+        self.appointment_search_input.setEnabled(not direct_mode)
+        self.appointment_combo.setEnabled(not direct_mode)
+        self.customer_search_input.setEnabled(direct_mode)
+        self.customer_combo.setEnabled(direct_mode)
+
+    def _load_customers(self):
+        self._customers = CustomerModel().get_all()
+        self._fill_customer_combo(self._customers)
+
+    def _fill_customer_combo(self, customers):
+        self.customer_combo.clear()
+        self._customer_ids = []
+        for c in customers:
+            phone = c.get("phone") or "Chua co SDT"
+            self.customer_combo.addItem(f"{c['name']} - {phone}")
+            self._customer_ids.append(c["id"])
+
+    def _filter_customers(self):
+        keyword = self.customer_search_input.text().strip().lower()
+        matched = [
+            c for c in self._customers
+            if keyword in (c.get("name") or "").lower()
+            or keyword in (c.get("phone") or "").lower()
+        ] if keyword else self._customers
+        self._fill_customer_combo(matched)
+
     def _load_appointments(self):
-        appointments = AppointmentModel().get_all()
+        self._appointments = AppointmentModel().get_all()
+        self._fill_appointment_combo(self._appointments)
+
+    def _fill_appointment_combo(self, appointments):
         self.appointment_combo.clear()
         self._appointment_ids = []
         for a in appointments:
-            label = f"#{a['id']} - {a['customer_name']} - {a['datetime']}"
+            phone = a.get("customer_phone") or "Chua co SDT"
+            label = f"#{a['id']} - {a['customer_name']} - {phone} - {a['datetime']}"
             self.appointment_combo.addItem(label)
             self._appointment_ids.append(a["id"])
+
+    def _filter_appointments(self):
+        keyword = self.appointment_search_input.text().strip().lower()
+        matched = [
+            a for a in self._appointments
+            if keyword in (a.get("customer_name") or "").lower()
+            or keyword in (a.get("customer_phone") or "").lower()
+        ] if keyword else self._appointments
+        self._fill_appointment_combo(matched)
 
     def _load_services(self):
         self._services = ServiceModel().get_all()
@@ -301,12 +400,30 @@ class InvoiceDialog(QDialog):
             return
         p   = self._products[idx]
         qty = self.qty_spin.value()
+        stock = p.get("stock", 0) or 0
+        if stock <= 0:
+            QMessageBox.warning(self, "Het hang", f"San pham '{p['name']}' da het hang!")
+            return
         # Nếu sản phẩm đã có thì cộng thêm số lượng
         for it in self._items:
             if it["item_type"] == "product" and it["item_id"] == p["id"]:
+                if it["quantity"] + qty > stock:
+                    QMessageBox.warning(
+                        self,
+                        "Khong du ton kho",
+                        f"San pham '{p['name']}' chi con {stock}, khong the them {it['quantity'] + qty}."
+                    )
+                    return
                 it["quantity"] += qty
                 self._refresh_cart()
                 return
+        if qty > stock:
+            QMessageBox.warning(
+                self,
+                "Khong du ton kho",
+                f"San pham '{p['name']}' chi con {stock}, khong the them {qty}."
+            )
+            return
         self._items.append({
             "item_type":  "product",
             "item_id":    p["id"],
@@ -347,10 +464,19 @@ class InvoiceDialog(QDialog):
 
     # --------------------------------------------------------- Get data --
     def get_data(self):
-        idx = self.appointment_combo.currentIndex()
+        direct_mode = self.invoice_mode_combo.currentIndex() == 1
+        appointment_idx = self.appointment_combo.currentIndex()
+        customer_idx = self.customer_combo.currentIndex()
         return {
-            "appointment_id": (self._appointment_ids[idx]
-                               if 0 <= idx < len(self._appointment_ids) else None),
+            "appointment_id": (
+                None if direct_mode else
+                self._appointment_ids[appointment_idx]
+                if 0 <= appointment_idx < len(self._appointment_ids) else None
+            ),
+            "customer_id": (
+                self._customer_ids[customer_idx]
+                if direct_mode and 0 <= customer_idx < len(self._customer_ids) else None
+            ),
             "payment_method": self.payment_combo.currentText(),
             "items":          self._items,
         }

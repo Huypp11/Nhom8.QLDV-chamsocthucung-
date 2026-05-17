@@ -9,7 +9,8 @@ class AppointmentModel:
     def get_by_date_range(self, date_from, date_to):
         conn = get_connection()
         rows = conn.execute("""
-            SELECT a.id, c.name as customer_name, p.name as pet_name,
+            SELECT a.id, c.name as customer_name, c.phone as customer_phone,
+                   p.name as pet_name,
                    s.name as service_name, a.datetime, a.status, a.note
             FROM appointments a
             JOIN customers c ON a.customer_id = c.id
@@ -24,7 +25,8 @@ class AppointmentModel:
     def get_all(self):
         conn = get_connection()
         rows = conn.execute("""
-            SELECT a.id, c.name as customer_name, p.name as pet_name,
+            SELECT a.id, c.name as customer_name, c.phone as customer_phone,
+                   p.name as pet_name,
                    s.name as service_name, a.datetime, a.status, a.note
             FROM appointments a
             JOIN customers c ON a.customer_id = c.id
