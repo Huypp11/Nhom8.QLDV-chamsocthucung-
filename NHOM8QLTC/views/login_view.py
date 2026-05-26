@@ -252,7 +252,7 @@ class LoginDialog(QDialog):
         success = self.model.add(username, password, fullname, "nhanvien")
         if success:
             QMessageBox.information(self, "Thành Công", 
-                f"✅ Đăng ký thành công!\n\nBạn có thể đăng nhập ngay bây giờ.")
+                f" Đăng ký thành công!\n\nBạn có thể đăng nhập ngay bây giờ.")
             # Xóa form
             self.reg_fullname.clear()
             self.reg_username.clear()

@@ -7,19 +7,14 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QComboBox, QDoubleSp
                              QAbstractItemView, QSplitter, QHeaderView, QLineEdit)
 from PyQt5.QtCore import Qt
 from ui.invoice_ui import Ui_InvoiceWidget
-from models.invoice_model import InvoiceModel
-from models.customer_model import CustomerModel
-from models.appointment_model import AppointmentModel
-from models.Product_model import ProductModel
-from models.service_model import ServiceModel
+from controllers.invoice_controller import InvoiceController
 
 
 class InvoiceView(QWidget, Ui_InvoiceWidget):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.model = InvoiceModel()
-        self.customer_model = CustomerModel()
+        self.controller = InvoiceController()
         self._customer_ids = []
         self._customers = []
         self.customer_search_input = QLineEdit()
@@ -39,7 +34,7 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
         self.customer_search_input.textChanged.connect(self._filter_customer_combo)
 
     def _load_customers(self):
-        self._customers = self.customer_model.get_all()
+        self._customers = self.controller.get_customers()
         self.customer_combo.clear()
         self._customer_ids = [None]
         self.customer_combo.addItem("-- Tất cả --")
@@ -69,12 +64,12 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
     def load_data(self):
         keyword = self.customer_search_input.text().strip()
         if keyword:
-            self._fill_table(self.model.search_by_customer(keyword))
+            self._fill_table(self.controller.get_invoices(keyword=keyword))
             return
 
         idx = self.customer_combo.currentIndex()
         cid = self._customer_ids[idx] if idx < len(self._customer_ids) else None
-        rows = self.model.get_by_customer(cid) if cid else self.model.get_all()
+        rows = self.controller.get_invoices(customer_id=cid)
         self._fill_table(rows)
 
     def _fill_table(self, rows):
@@ -116,12 +111,10 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
                 QMessageBox.warning(self, "Lỗi", "Hóa đơn phải có ít nhất 1 dịch vụ hoặc sản phẩm!")
                 return
             try:
-                invoice_id = self.model.add_full(
-                    data["appointment_id"],
-                    data["payment_method"],
-                    data["items"],
-                    data["customer_id"]
-                )
+                ok, message, invoice_id = self.controller.create(data)
+                if not ok:
+                    QMessageBox.warning(self, "Loi", message)
+                    return
             except ValueError as exc:
                 QMessageBox.warning(self, "Khong du ton kho", str(exc))
                 return
@@ -134,7 +127,7 @@ class InvoiceView(QWidget, Ui_InvoiceWidget):
         if iid is None:
             return
 
-        items = self.model.get_items(iid)
+        items = self.controller.get_items(iid)
         row   = self.table.currentRow()
 
         # Xây dựng chi tiết hóa đơn
@@ -320,7 +313,7 @@ class InvoiceDialog(QDialog):
         self.customer_combo.setEnabled(direct_mode)
 
     def _load_customers(self):
-        self._customers = CustomerModel().get_all()
+        self._customers = InvoiceController().get_customers()
         self._fill_customer_combo(self._customers)
 
     def _fill_customer_combo(self, customers):
@@ -341,7 +334,7 @@ class InvoiceDialog(QDialog):
         self._fill_customer_combo(matched)
 
     def _load_appointments(self):
-        self._appointments = AppointmentModel().get_all()
+        self._appointments = InvoiceController().get_appointments()
         self._fill_appointment_combo(self._appointments)
 
     def _fill_appointment_combo(self, appointments):
@@ -363,13 +356,13 @@ class InvoiceDialog(QDialog):
         self._fill_appointment_combo(matched)
 
     def _load_services(self):
-        self._services = ServiceModel().get_all()
+        self._services = InvoiceController().get_services()
         self.service_combo.clear()
         for s in self._services:
             self.service_combo.addItem(f"{s['name']}  ({s['price']:,.0f} đ)")
 
     def _load_products(self):
-        self._products = ProductModel().get_all()
+        self._products = InvoiceController().get_products()
         self.product_combo.clear()
         for p in self._products:
             self.product_combo.addItem(f"{p['name']}  ({p['price']:,.0f} đ)")

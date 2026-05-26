@@ -6,17 +6,14 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QLineEdit, QComboBox
                              QDateTimeEdit)
 from PyQt5.QtCore import Qt, QDateTime
 from ui.appointment_ui import Ui_AppointmentWidget
-from models.appointment_model import AppointmentModel
-from models.customer_model import CustomerModel
-from models.pet_model import PetModel
-from models.service_model import ServiceModel
+from controllers.appointment_controller import AppointmentController
 
 
 class AppointmentView(QWidget, Ui_AppointmentWidget):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.model = AppointmentModel()
+        self.controller = AppointmentController()
         self._connect_signals()
         self.load_data()
 
@@ -30,9 +27,7 @@ class AppointmentView(QWidget, Ui_AppointmentWidget):
     def load_data(self):
         date_from = self.date_from.date().toString("yyyy-MM-dd")
         date_to   = self.date_to.date().toString("yyyy-MM-dd")
-        rows = self.model.get_by_date_range(date_from, date_to)
-        if not rows:
-            rows = self.model.get_all()
+        rows = self.controller.get_by_date_range(date_from, date_to)
         self._fill_table(rows)
 
     def _fill_table(self, rows):
@@ -61,8 +56,10 @@ class AppointmentView(QWidget, Ui_AppointmentWidget):
             if not all([data["customer_id"], data["pet_id"], data["service_id"]]):
                 QMessageBox.warning(self, "Lỗi", "Vui lòng chọn đầy đủ thông tin!")
                 return
-            self.model.add(data["customer_id"], data["pet_id"],
-                           data["service_id"], data["datetime"], data["note"])
+            ok, message = self.controller.add(data)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã đặt lịch hẹn!")
 
@@ -76,7 +73,7 @@ class AppointmentView(QWidget, Ui_AppointmentWidget):
         aid = self._get_selected_id()
         if aid is None:
             return
-        self.model.update_status(aid, "Hoàn thành")
+        self.controller.complete(aid)
         self.load_data()
         QMessageBox.information(self, "Thành công", "Đã đánh dấu hoàn thành!")
 
@@ -87,7 +84,7 @@ class AppointmentView(QWidget, Ui_AppointmentWidget):
         reply = QMessageBox.question(self, "Xác nhận", "Bạn có chắc muốn hủy lịch hẹn này?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.model.update_status(aid, "Đã hủy")
+            self.controller.cancel(aid)
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã hủy lịch hẹn!")
 
@@ -130,7 +127,7 @@ class AppointmentDialog(QDialog):
         layout.addRow("", btn_layout)
 
     def _load_customers(self):
-        customers = CustomerModel().get_all()
+        customers = AppointmentController().get_customers()
         self.customer_combo.clear()
         self._customer_ids = []
         for c in customers:
@@ -145,13 +142,13 @@ class AppointmentDialog(QDialog):
         self._pet_ids = []
         if idx < 0 or idx >= len(self._customer_ids):
             return
-        pets = PetModel().get_by_customer(self._customer_ids[idx])
+        pets = AppointmentController().get_pets_by_customer(self._customer_ids[idx])
         for p in pets:
             self.pet_combo.addItem(p["name"])
             self._pet_ids.append(p["id"])
 
     def _load_services(self):
-        services = ServiceModel().get_all()
+        services = AppointmentController().get_services()
         self.service_combo.clear()
         self._service_ids = []
         for s in services:

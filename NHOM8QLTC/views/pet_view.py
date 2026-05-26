@@ -5,16 +5,14 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QLineEdit, QSpinBox,
                              QPushButton, QHBoxLayout, QMessageBox, QTableWidgetItem)
 from PyQt5.QtCore import Qt
 from ui.pet_ui import Ui_PetWidget
-from models.pet_model import PetModel
-from models.customer_model import CustomerModel
+from controllers.pet_controller import PetController
 
 
 class PetView(QWidget, Ui_PetWidget):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.model = PetModel()
-        self.customer_model = CustomerModel()
+        self.controller = PetController()
         self._customer_ids = []
         self._connect_signals()
         self.load_customers()
@@ -30,7 +28,7 @@ class PetView(QWidget, Ui_PetWidget):
         self._customer_ids = []
         self.customer_combo.addItem("-- Tất cả --")
         self._customer_ids.append(None)
-        customers = self.customer_model.get_all()
+        customers = self.controller.get_customers()
         for c in customers:
             self.customer_combo.addItem(c["name"])
             self._customer_ids.append(c["id"])
@@ -39,9 +37,9 @@ class PetView(QWidget, Ui_PetWidget):
         idx = self.customer_combo.currentIndex()
         cid = self._customer_ids[idx] if idx < len(self._customer_ids) else None
         if cid:
-            rows = self.model.get_by_customer(cid)
+            rows = self.controller.get_pets(cid)
         else:
-            rows = self.model.get_all()
+            rows = self.controller.get_pets()
         self._fill_table(rows)
 
     def _fill_table(self, rows):
@@ -79,7 +77,10 @@ class PetView(QWidget, Ui_PetWidget):
             if not data["name"]:
                 QMessageBox.warning(self, "Lỗi", "Tên thú cưng không được để trống!")
                 return
-            self.model.add(cid, data["name"], data["species"], data["breed"], data["age"])
+            ok, message = self.controller.add(cid, data)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_pets()
             QMessageBox.information(self, "Thành công", "Đã thêm thú cưng!")
 
@@ -97,7 +98,10 @@ class PetView(QWidget, Ui_PetWidget):
         dialog = PetDialog(self, current)
         if dialog.exec_() == QDialog.Accepted:
             data = dialog.get_data()
-            self.model.update(pid, data["name"], data["species"], data["breed"], data["age"])
+            ok, message = self.controller.update(pid, data)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_pets()
             QMessageBox.information(self, "Thành công", "Đã cập nhật thú cưng!")
 
@@ -108,7 +112,7 @@ class PetView(QWidget, Ui_PetWidget):
         reply = QMessageBox.question(self, "Xác nhận", "Bạn có chắc muốn xóa thú cưng này?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.model.delete(pid)
+            self.controller.delete(pid)
             self.load_pets()
             QMessageBox.information(self, "Thành công", "Đã xóa thú cưng!")
 

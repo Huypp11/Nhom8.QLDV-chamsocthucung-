@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QComboBox, QLineEdit
                              QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
                              QMessageBox, QAbstractItemView, QHeaderView)
 from PyQt5.QtCore import Qt
-from models.Product_model import ProductModel
+from controllers.product_controller import ProductController
 
 CATEGORIES = ["Sữa tắm", "Thức ăn", "Phụ kiện", "Đồ chơi", "Khác"]
 
@@ -14,7 +14,7 @@ CATEGORIES = ["Sữa tắm", "Thức ăn", "Phụ kiện", "Đồ chơi", "Khác
 class ProductView(QWidget):
     def __init__(self):
         super().__init__()
-        self.model = ProductModel()
+        self.controller = ProductController()
         self._setup_ui()
         self._connect_signals()
         self.load_data()
@@ -75,11 +75,11 @@ class ProductView(QWidget):
     # --------------------------------------------------------------- Data --
     def load_data(self):
         self.search_input.clear()
-        self._fill_table(self.model.get_all())
+        self._fill_table(self.controller.get_all())
 
     def search(self):
         kw = self.search_input.text().strip()
-        self._fill_table(self.model.search(kw) if kw else self.model.get_all())
+        self._fill_table(self.controller.search(kw))
 
     def _fill_table(self, rows):
         self.table.setRowCount(0)
@@ -115,7 +115,10 @@ class ProductView(QWidget):
             if not d["name"]:
                 QMessageBox.warning(self, "Lỗi", "Tên sản phẩm không được để trống!")
                 return
-            self.model.add(d["name"], d["description"], d["price"], d["category"], d["stock"])
+            ok, message = self.controller.add(d)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã thêm sản phẩm!")
 
@@ -123,13 +126,16 @@ class ProductView(QWidget):
         pid = self._get_selected_id()
         if pid is None:
             return
-        product = self.model.get_by_id(pid)
+        product = self.controller.get_by_id(pid)
         if not product:
             return
         dialog = ProductDialog(self, product)
         if dialog.exec_() == QDialog.Accepted:
             d = dialog.get_data()
-            self.model.update(pid, d["name"], d["description"], d["price"], d["category"], d["stock"])
+            ok, message = self.controller.update(pid, d)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã cập nhật sản phẩm!")
 
@@ -140,7 +146,7 @@ class ProductView(QWidget):
         reply = QMessageBox.question(self, "Xác nhận", "Bạn có chắc muốn xóa sản phẩm này?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.model.delete(pid)
+            self.controller.delete(pid)
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã xóa sản phẩm!")
 

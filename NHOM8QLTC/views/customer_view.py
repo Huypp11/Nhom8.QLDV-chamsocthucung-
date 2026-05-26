@@ -5,14 +5,14 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QLineEdit,
                              QPushButton, QHBoxLayout, QMessageBox, QTableWidgetItem)
 from PyQt5.QtCore import Qt
 from ui.customer_ui import Ui_CustomerWidget
-from models.customer_model import CustomerModel
+from controllers.customer_controller import CustomerController
 
 
 class CustomerView(QWidget, Ui_CustomerWidget):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.model = CustomerModel()
+        self.controller = CustomerController()
         self._connect_signals()
         self.load_data()
 
@@ -25,7 +25,7 @@ class CustomerView(QWidget, Ui_CustomerWidget):
         self.search_input.returnPressed.connect(self.search_customers)
 
     def load_data(self, data=None):
-        rows = data if data is not None else self.model.get_all()
+        rows = data if data is not None else self.controller.get_all()
         self._fill_table(rows)
 
     def _fill_table(self, rows):
@@ -42,7 +42,7 @@ class CustomerView(QWidget, Ui_CustomerWidget):
     def search_customers(self):
         keyword = self.search_input.text().strip()
         if keyword:
-            self.load_data(self.model.search(keyword))
+            self.load_data(self.controller.search(keyword))
         else:
             self.load_data()
 
@@ -60,7 +60,10 @@ class CustomerView(QWidget, Ui_CustomerWidget):
             if not data["name"]:
                 QMessageBox.warning(self, "Lỗi", "Tên không được để trống!")
                 return
-            self.model.add(data["name"], data["phone"], data["email"], data["address"])
+            ok, message = self.controller.add(data)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã thêm khách hàng!")
 
@@ -68,14 +71,17 @@ class CustomerView(QWidget, Ui_CustomerWidget):
         cid = self._get_selected_id()
         if cid is None:
             return
-        customer = self.model.get_by_id(cid)
+        customer = self.controller.get_by_id(cid)
         dialog = CustomerDialog(self, customer)
         if dialog.exec_() == QDialog.Accepted:
             data = dialog.get_data()
             if not data["name"]:
                 QMessageBox.warning(self, "Lỗi", "Tên không được để trống!")
                 return
-            self.model.update(cid, data["name"], data["phone"], data["email"], data["address"])
+            ok, message = self.controller.update(cid, data)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã cập nhật khách hàng!")
 
@@ -86,7 +92,7 @@ class CustomerView(QWidget, Ui_CustomerWidget):
         reply = QMessageBox.question(self, "Xác nhận", "Bạn có chắc muốn xóa khách hàng này?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.model.delete(cid)
+            self.controller.delete(cid)
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã xóa khách hàng!")
 

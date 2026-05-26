@@ -6,14 +6,14 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QLineEdit, QSpinBox,
                              QDoubleSpinBox)
 from PyQt5.QtCore import Qt
 from ui.service_ui import Ui_ServiceWidget
-from models.service_model import ServiceModel
+from controllers.service_controller import ServiceController
 
 
 class ServiceView(QWidget, Ui_ServiceWidget):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.model = ServiceModel()
+        self.controller = ServiceController()
         self._connect_signals()
         self.load_data()
 
@@ -26,7 +26,7 @@ class ServiceView(QWidget, Ui_ServiceWidget):
         self.search_input.returnPressed.connect(self.search_services)
 
     def load_data(self, data=None):
-        rows = data if data is not None else self.model.get_all()
+        rows = data if data is not None else self.controller.get_all()
         self._fill_table(rows)
 
     def _fill_table(self, rows):
@@ -49,7 +49,7 @@ class ServiceView(QWidget, Ui_ServiceWidget):
 
     def search_services(self):
         keyword = self.search_input.text().strip()
-        self.load_data(self.model.search(keyword) if keyword else None)
+        self.load_data(self.controller.search(keyword))
 
     def _get_selected_id(self):
         row = self.table.currentRow()
@@ -65,7 +65,10 @@ class ServiceView(QWidget, Ui_ServiceWidget):
             if not data["name"]:
                 QMessageBox.warning(self, "Lỗi", "Tên dịch vụ không được để trống!")
                 return
-            self.model.add(data["name"], data["description"], data["price"], data["duration"])
+            ok, message = self.controller.add(data)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã thêm dịch vụ!")
 
@@ -83,7 +86,10 @@ class ServiceView(QWidget, Ui_ServiceWidget):
         dialog = ServiceDialog(self, current)
         if dialog.exec_() == QDialog.Accepted:
             data = dialog.get_data()
-            self.model.update(sid, data["name"], data["description"], data["price"], data["duration"])
+            ok, message = self.controller.update(sid, data)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã cập nhật dịch vụ!")
 
@@ -94,7 +100,7 @@ class ServiceView(QWidget, Ui_ServiceWidget):
         reply = QMessageBox.question(self, "Xác nhận", "Bạn có chắc muốn xóa dịch vụ này?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.model.delete(sid)
+            self.controller.delete(sid)
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã xóa dịch vụ!")
 

@@ -6,13 +6,13 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QComboBox, QLineEdit
                              QTableWidget, QTableWidgetItem, QMessageBox,
                              QAbstractItemView, QGroupBox)
 from PyQt5.QtCore import Qt
-from models.user_model import UserModel
+from controllers.user_controller import UserController
 
 
 class UserView(QWidget):
     def __init__(self):
         super().__init__()
-        self.model = UserModel()
+        self.controller = UserController()
         self._setup_ui()
         self._connect_signals()
         self.load_data()
@@ -55,7 +55,7 @@ class UserView(QWidget):
         self.del_btn.clicked.connect(self.delete_user)
 
     def load_data(self):
-        self._fill_table(self.model.get_all())
+        self._fill_table(self.controller.get_all())
 
     def _fill_table(self, rows):
         self.table.setRowCount(0)
@@ -85,10 +85,13 @@ class UserView(QWidget):
             if not d["username"] or not d["password"] or not d["full_name"]:
                 QMessageBox.warning(self, "Lỗi", "Vui lòng nhập đầy đủ thông tin!")
                 return
-            if self.model.username_exists(d["username"]):
+            if self.controller.username_exists(d["username"]):
                 QMessageBox.warning(self, "Lỗi", f"Tên đăng nhập '{d['username']}' đã tồn tại!")
                 return
-            self.model.add(d["username"], d["password"], d["full_name"], d["role"])
+            ok, message = self.controller.add(d)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             self.load_data()
             QMessageBox.information(self, "Thành công", "Đã tạo tài khoản!")
 
@@ -102,7 +105,10 @@ class UserView(QWidget):
             if not new_pwd:
                 QMessageBox.warning(self, "Lỗi", "Mật khẩu không được để trống!")
                 return
-            self.model.update_password(uid, new_pwd)
+            ok, message = self.controller.update_password(uid, new_pwd)
+            if not ok:
+                QMessageBox.warning(self, "Loi", message)
+                return
             QMessageBox.information(self, "Thành công", "Đã đổi mật khẩu!")
 
     def delete_user(self):
@@ -112,7 +118,7 @@ class UserView(QWidget):
         reply = QMessageBox.question(self, "Xác nhận", "Bạn có chắc muốn xóa tài khoản này?",
                                      QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            ok = self.model.delete(uid)
+            ok, message = self.controller.delete(uid)
             if ok:
                 self.load_data()
                 QMessageBox.information(self, "Thành công", "Đã xóa tài khoản!")
