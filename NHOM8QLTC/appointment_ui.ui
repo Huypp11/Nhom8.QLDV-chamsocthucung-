@@ -57,6 +57,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QLineEdit" name="txt_tim">
+       <property name="placeholderText">
+        <string>Tìm khách hàng , số đt</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="filter_btn">
        <property name="text">
         <string>Lọc</string>

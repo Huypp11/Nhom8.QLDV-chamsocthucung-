@@ -36,6 +36,38 @@ class AppointmentModel:
         """).fetchall()
         conn.close()
         return [dict(r) for r in rows]
+    
+    def search(self, date_from=None, date_to=None, keyword=""):
+        conn = get_connection()
+        
+        query = """
+            SELECT a.id, c.name as customer_name, p.name as pet_name,
+                   s.name as service_name, a.datetime, a.status, a.note
+            FROM appointments a
+            JOIN customers c ON a.customer_id = c.id
+            JOIN pets p      ON a.pet_id = p.id
+            JOIN services s  ON a.service_id = s.id
+            WHERE 1=1
+        """
+        params = []
+
+        # 1. Lọc theo khoảng ngày (Nếu người dùng có chọn ngày)
+        if date_from and date_to:
+            query += " AND DATE(a.datetime) BETWEEN ? AND ?"
+            params.extend([date_from, date_to])
+
+        # 2. Lọc theo từ khóa (Tìm theo Tên khách, SĐT khách, hoặc Tên thú cưng)
+        if keyword:
+            query += " AND (c.name LIKE ? OR c.phone = ? OR p.name LIKE ?)"
+            k = f"%{keyword}%"
+            params.extend([k, keyword, k])
+
+        # Sắp xếp lịch hẹn mới nhất lên đầu
+        query += " ORDER BY a.datetime DESC"
+        
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
 
     def add(self, customer_id, pet_id, service_id, datetime_str, note=""):
         conn = get_connection()

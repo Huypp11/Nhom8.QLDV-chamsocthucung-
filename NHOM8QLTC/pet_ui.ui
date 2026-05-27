@@ -19,7 +19,7 @@
   <property name="windowTitle">
    <string>Quản Lý Thú Cưng</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
    <item>
     <layout class="QHBoxLayout" name="filterLayout">
      <item>
@@ -31,6 +31,20 @@
      </item>
      <item>
       <widget class="QComboBox" name="customer_combo"/>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="txt_tim">
+       <property name="placeholderText">
+        <string>Tìm khách theo tên, số đt</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_timkiem">
+       <property name="text">
+        <string>Tìm kiếm</string>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="filterSpacer">

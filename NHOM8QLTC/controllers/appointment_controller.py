@@ -17,6 +17,8 @@ class AppointmentController:
 
     def get_all(self):
         return self.model.get_all()
+    def search(self, date_from=None, date_to=None, keyword=""):
+        return self.model.search(date_from, date_to, keyword)
 
     def get_customers(self):
         return self.customer_model.get_all()

@@ -12,7 +12,8 @@ class PetController:
 
     def get_pets(self, customer_id=None):
         return self.model.get_by_customer(customer_id) if customer_id else self.model.get_all()
-
+    def search(self, customer_id=None, keyword=""):
+        return self.model.search(customer_id, keyword)
     def add(self, customer_id, data):
         if not customer_id:
             return False, "Vui long chon khach hang truoc!"

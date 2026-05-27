@@ -23,11 +23,31 @@ class AppointmentView(QWidget, Ui_AppointmentWidget):
         self.complete_btn.clicked.connect(self.complete_appointment)
         self.cancel_btn.clicked.connect(self.cancel_appointment)
         self.filter_btn.clicked.connect(self.load_data)
+        # Kết nối ô nhập tìm kiếm (Giả sử tên là txt_tim, ấn Enter để lọc ngay)
+        try:
+            self.txt_tim.returnPressed.connect(self.load_data)
+        except AttributeError:
+            pass # Bỏ qua nếu bạn lỡ đặt tên ô này khác 'txt_tim' trong Designer
 
     def load_data(self):
-        date_from = self.date_from.date().toString("yyyy-MM-dd")
-        date_to   = self.date_to.date().toString("yyyy-MM-dd")
-        rows = self.controller.get_by_date_range(date_from, date_to)
+        keyword = ""
+
+        try:
+         keyword = self.txt_tim.text().strip()
+        except AttributeError:
+            pass
+
+    # Chưa nhập tìm kiếm -> hiện tất cả
+        if keyword == "":
+         rows = self.controller.get_all()
+
+    # Có nhập -> lọc
+        else:
+         date_from = self.date_from.date().toString("yyyy-MM-dd")
+         date_to = self.date_to.date().toString("yyyy-MM-dd")
+
+         rows = self.controller.search(date_from, date_to, keyword)
+
         self._fill_table(rows)
 
     def _fill_table(self, rows):

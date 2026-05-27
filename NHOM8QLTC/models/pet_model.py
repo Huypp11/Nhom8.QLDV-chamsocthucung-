@@ -24,6 +24,31 @@ class PetModel:
         """).fetchall()
         conn.close()
         return [dict(r) for r in rows]
+    def search(self, customer_id=None, keyword=""):
+        conn = get_connection()
+        
+        query = """
+            SELECT p.*, c.name as customer_name, c.phone as customer_phone
+            FROM pets p JOIN customers c ON p.customer_id = c.id
+            WHERE 1=1
+        """
+        params = []
+
+        if customer_id and str(customer_id) != "0" and str(customer_id) != "all":
+            query += " AND p.customer_id = ?"
+            params.append(customer_id)
+
+        if keyword:
+            # Tìm gần đúng theo Tên khách, Số điện thoại khách HOẶC Tên thú cưng
+            query += " AND (c.name LIKE ? OR c.phone LIKE ? OR p.name LIKE ?)"
+            keyword_param = f"%{keyword}%"
+            params.extend([keyword_param, keyword, keyword_param])
+
+        query += " ORDER BY p.name"
+        
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
 
     def add(self, customer_id, name, species, breed, age):
         conn = get_connection()

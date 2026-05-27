@@ -22,6 +22,13 @@ class PetView(QWidget, Ui_PetWidget):
         self.edit_btn.clicked.connect(self.edit_pet)
         self.delete_btn.clicked.connect(self.delete_pet)
         self.customer_combo.currentIndexChanged.connect(self.load_pets)
+        # Lọc khi đổi ComboBox khách hàng
+        self.customer_combo.currentIndexChanged.connect(self.load_pets)
+        
+        # BẮT SỰ KIỆN TÌM KIẾM
+        self.btn_timkiem.clicked.connect(self.load_pets)
+        self.txt_tim.returnPressed.connect(self.load_pets) # Bấm Enter ở ô chữ cũng tự tìm
+
 
     def load_customers(self):
         self.customer_combo.clear()
@@ -36,10 +43,12 @@ class PetView(QWidget, Ui_PetWidget):
     def load_pets(self):
         idx = self.customer_combo.currentIndex()
         cid = self._customer_ids[idx] if idx < len(self._customer_ids) else None
-        if cid:
-            rows = self.controller.get_pets(cid)
-        else:
-            rows = self.controller.get_pets()
+         # 2. Lấy từ khóa từ ô tìm kiếm
+        keyword = self.txt_tim.text().strip()
+        
+        # 3. Gọi hàm search từ Model (Hỗ trợ lọc cả Khách hàng và Từ khóa cùng lúc)
+        rows = self.controller.search(customer_id=cid, keyword=keyword)
+        
         self._fill_table(rows)
 
     def _fill_table(self, rows):
