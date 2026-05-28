@@ -8,19 +8,35 @@ class ServiceController:
     def get_all(self):
         return self.model.get_all()
 
+    def get_by_species(self, species):
+        return self.model.get_by_species(species)
+
     def search(self, keyword):
         return self.model.search(keyword) if keyword else self.model.get_all()
 
     def add(self, data):
         if not data["name"]:
             return False, "Ten dich vu khong duoc de trong!"
-        self.model.add(data["name"], data["description"], data["price"], data["duration"])
+        self.model.add(
+            data["name"],
+            data["description"],
+            data["price"],
+            data["duration"],
+            data["species_category"],
+        )
         return True, "Da them dich vu!"
 
     def update(self, service_id, data):
         if not data["name"]:
             return False, "Ten dich vu khong duoc de trong!"
-        self.model.update(service_id, data["name"], data["description"], data["price"], data["duration"])
+        self.model.update(
+            service_id,
+            data["name"],
+            data["description"],
+            data["price"],
+            data["duration"],
+            data["species_category"],
+        )
         return True, "Da cap nhat dich vu!"
 
     def delete(self, service_id):
@@ -29,4 +45,3 @@ class ServiceController:
 
     def get_popular(self):
         return self.model.get_popular()
-

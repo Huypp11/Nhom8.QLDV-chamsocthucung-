@@ -34,8 +34,8 @@ class Ui_ServiceWidget(object):
 
         # Bảng
         self.table = QtWidgets.QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["ID", "Tên Dịch Vụ", "Mô Tả", "Giá (VNĐ)", "Thời Gian (phút)"])
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels(["ID", "Tên Dịch Vụ", "Mô Tả", "Giá (VNĐ)", "Thời Gian (phút)", "Loài"])
         self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.table.horizontalHeader().setStretchLastSection(True)

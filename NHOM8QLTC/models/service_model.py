@@ -15,26 +15,50 @@ class ServiceModel:
     def search(self, keyword):
         conn = get_connection()
         rows = conn.execute(
-            "SELECT * FROM services WHERE name LIKE ? OR description LIKE ?",
-            (f"%{keyword}%", f"%{keyword}%")
+            """
+            SELECT * FROM services
+            WHERE name LIKE ? OR description LIKE ? OR species_category LIKE ?
+            ORDER BY name
+            """,
+            (f"%{keyword}%", f"%{keyword}%", f"%{keyword}%")
         ).fetchall()
         conn.close()
         return [dict(r) for r in rows]
 
-    def add(self, name, description, price, duration):
+    def get_by_species(self, species):
+        conn = get_connection()
+        rows = conn.execute("""
+            SELECT * FROM services
+            WHERE species_category = ?
+               OR species_category = 'Tat ca'
+               OR species_category IS NULL
+               OR TRIM(species_category) = ''
+            ORDER BY name
+        """, (species or "",)).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def add(self, name, description, price, duration, species_category):
         conn = get_connection()
         conn.execute(
-            "INSERT INTO services (name, description, price, duration) VALUES (?, ?, ?, ?)",
-            (name, description, price, duration)
+            """
+            INSERT INTO services (name, description, price, duration, species_category)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (name, description, price, duration, species_category)
         )
         conn.commit()
         conn.close()
 
-    def update(self, service_id, name, description, price, duration):
+    def update(self, service_id, name, description, price, duration, species_category):
         conn = get_connection()
         conn.execute(
-            "UPDATE services SET name=?, description=?, price=?, duration=? WHERE id=?",
-            (name, description, price, duration, service_id)
+            """
+            UPDATE services
+            SET name=?, description=?, price=?, duration=?, species_category=?
+            WHERE id=?
+            """,
+            (name, description, price, duration, species_category, service_id)
         )
         conn.commit()
         conn.close()

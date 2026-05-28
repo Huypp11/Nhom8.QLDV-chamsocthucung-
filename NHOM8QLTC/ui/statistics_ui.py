@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# File được tạo từ statistics_ui.ui - KHÔNG CHỈNH SỬA FILE NÀY
+# File được tạo từ statistics_ui.ui 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 

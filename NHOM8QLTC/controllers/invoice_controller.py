@@ -1,7 +1,8 @@
 from models.appointment_model import AppointmentModel
 from models.customer_model import CustomerModel
 from models.invoice_model import InvoiceModel
-from models.Product_model import ProductModel
+from models.pet_model import PetModel
+from models.product_model import ProductModel
 from models.service_model import ServiceModel
 
 
@@ -10,6 +11,7 @@ class InvoiceController:
         self.model = InvoiceModel()
         self.customer_model = CustomerModel()
         self.appointment_model = AppointmentModel()
+        self.pet_model = PetModel()
         self.product_model = ProductModel()
         self.service_model = ServiceModel()
 
@@ -21,6 +23,12 @@ class InvoiceController:
 
     def get_services(self):
         return self.service_model.get_all()
+
+    def get_services_by_species(self, species):
+        return self.service_model.get_by_species(species)
+
+    def get_pets_by_customer(self, customer_id):
+        return self.pet_model.get_by_customer(customer_id)
 
     def get_products(self):
         return self.product_model.get_all()
@@ -48,4 +56,3 @@ class InvoiceController:
 
     def get_monthly_revenue(self, year):
         return self.model.get_monthly_revenue(year)
-

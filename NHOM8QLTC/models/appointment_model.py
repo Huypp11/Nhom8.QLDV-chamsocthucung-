@@ -9,8 +9,9 @@ class AppointmentModel:
     def get_by_date_range(self, date_from, date_to):
         conn = get_connection()
         rows = conn.execute("""
-            SELECT a.id, c.name as customer_name, c.phone as customer_phone,
-                   p.name as pet_name,
+            SELECT a.id, a.customer_id, a.pet_id,
+                   c.name as customer_name, c.phone as customer_phone,
+                   p.name as pet_name, p.species as pet_species,
                    s.name as service_name, a.datetime, a.status, a.note
             FROM appointments a
             JOIN customers c ON a.customer_id = c.id
@@ -25,8 +26,9 @@ class AppointmentModel:
     def get_all(self):
         conn = get_connection()
         rows = conn.execute("""
-            SELECT a.id, c.name as customer_name, c.phone as customer_phone,
-                   p.name as pet_name,
+            SELECT a.id, a.customer_id, a.pet_id,
+                   c.name as customer_name, c.phone as customer_phone,
+                   p.name as pet_name, p.species as pet_species,
                    s.name as service_name, a.datetime, a.status, a.note
             FROM appointments a
             JOIN customers c ON a.customer_id = c.id
@@ -41,7 +43,9 @@ class AppointmentModel:
         conn = get_connection()
         
         query = """
-            SELECT a.id, c.name as customer_name, p.name as pet_name,
+            SELECT a.id, a.customer_id, a.pet_id,
+                   c.name as customer_name, c.phone as customer_phone,
+                   p.name as pet_name, p.species as pet_species,
                    s.name as service_name, a.datetime, a.status, a.note
             FROM appointments a
             JOIN customers c ON a.customer_id = c.id
@@ -54,7 +58,12 @@ class AppointmentModel:
         # 1. Lọc theo khoảng ngày (Nếu người dùng có chọn ngày)
         if date_from and date_to:
             query += " AND DATE(a.datetime) BETWEEN ? AND ?"
-            params.extend([date_from, date_to])
+            params.extend([
+                
+                f"{date_from} 00:00:00",
+                f"{date_to} 23:59:59"
+                
+                ])
 
         # 2. Lọc theo từ khóa (Tìm theo Tên khách, SĐT khách, hoặc Tên thú cưng)
         if keyword:

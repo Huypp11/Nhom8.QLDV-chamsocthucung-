@@ -3,7 +3,7 @@ Tầng 3 - VIEW: Giao diện quản lý dịch vụ
 """
 from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QLineEdit, QSpinBox,
                              QPushButton, QHBoxLayout, QMessageBox, QTableWidgetItem,
-                             QDoubleSpinBox)
+                             QDoubleSpinBox, QComboBox)
 from PyQt5.QtCore import Qt
 from ui.service_ui import Ui_ServiceWidget
 from controllers.service_controller import ServiceController
@@ -40,6 +40,7 @@ class ServiceView(QWidget, Ui_ServiceWidget):
                 str(row.get("description", "") or ""),
                 f"{row.get('price', 0):,.0f}",
                 str(row.get("duration", "")),
+                str(row.get("species_category", "") or "Tat ca"),
             ]
             for c, val in enumerate(values):
                 item = QTableWidgetItem(val)
@@ -82,6 +83,7 @@ class ServiceView(QWidget, Ui_ServiceWidget):
             "description": self.table.item(row, 2).text(),
             "price":       self.table.item(row, 3).text().replace(",", ""),
             "duration":    self.table.item(row, 4).text(),
+            "species_category": self.table.item(row, 5).text(),
         }
         dialog = ServiceDialog(self, current)
         if dialog.exec_() == QDialog.Accepted:
@@ -109,7 +111,7 @@ class ServiceDialog(QDialog):
     def __init__(self, parent=None, data=None):
         super().__init__(parent)
         self.setWindowTitle("Thêm Dịch Vụ" if data is None else "Chỉnh Sửa Dịch Vụ")
-        self.setFixedSize(380, 230)
+        self.setFixedSize(380, 270)
         layout = QFormLayout(self)
 
         self.name_input = QLineEdit(data["name"] if data else "")
@@ -131,11 +133,21 @@ class ServiceDialog(QDialog):
                 self.duration_input.setValue(int(data["duration"]))
             except (ValueError, TypeError):
                 pass
+        self.species_input = QComboBox()
+        self.species_input.addItems(["Tat ca", "Cho", "Meo", "Chim", "Ca", "Khac"])
+        if data:
+            species = data.get("species_category") or "Tat ca"
+            idx = self.species_input.findText(species)
+            if idx < 0:
+                self.species_input.addItem(species)
+                idx = self.species_input.findText(species)
+            self.species_input.setCurrentIndex(idx)
 
         layout.addRow("Tên dịch vụ (*):", self.name_input)
         layout.addRow("Mô tả:",           self.desc_input)
         layout.addRow("Giá (VNĐ):",       self.price_input)
         layout.addRow("Thời gian (phút):", self.duration_input)
+        layout.addRow("Loai thu cung:", self.species_input)
 
         btn_layout = QHBoxLayout()
         save_btn   = QPushButton("💾 Lưu")
@@ -152,4 +164,5 @@ class ServiceDialog(QDialog):
             "description": self.desc_input.text().strip(),
             "price":       self.price_input.value(),
             "duration":    self.duration_input.value(),
+            "species_category": self.species_input.currentText(),
         }

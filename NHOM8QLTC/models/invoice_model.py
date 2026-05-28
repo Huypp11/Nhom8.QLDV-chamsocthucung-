@@ -152,3 +152,72 @@ class InvoiceModel:
         """, (str(year),)).fetchall()
         conn.close()
         return [dict(r) for r in rows]
+
+    def get_revenue_by_period(self, period, year):
+        formats = {
+            "day": "%Y-%m-%d",
+            "week": "%Y-W%W",
+            "month": "%Y-%m",
+            "year": "%Y",
+        }
+        date_format = formats.get(period, "%Y-%m")
+        params = []
+        where_clause = ""
+        if period in ("day", "week", "month"):
+            where_clause = "WHERE strftime('%Y', created_at) = ?"
+            params.append(str(year))
+
+        conn = get_connection()
+        rows = conn.execute(f"""
+            SELECT strftime('{date_format}', created_at) as period,
+                   SUM(total_amount) as total
+            FROM invoices
+            {where_clause}
+            GROUP BY period
+            ORDER BY period
+        """, params).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def get_products_sold(self, year):
+        conn = get_connection()
+        rows = conn.execute("""
+            SELECT ii.item_name as product_name,
+                   SUM(ii.quantity) as total
+            FROM invoice_items ii
+            JOIN invoices i ON i.id = ii.invoice_id
+            WHERE ii.item_type = 'product'
+              AND strftime('%Y', i.created_at) = ?
+            GROUP BY ii.item_id, ii.item_name
+            ORDER BY total DESC, ii.item_name
+        """, (str(year),)).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def get_products_sold_by_period(self, period, year):
+        formats = {
+            "day": "%Y-%m-%d",
+            "week": "%Y-W%W",
+            "month": "%Y-%m",
+            "year": "%Y",
+        }
+        date_format = formats.get(period, "%Y-%m")
+        params = []
+        where_clause = ""
+        if period in ("day", "week", "month"):
+            where_clause = "AND strftime('%Y', i.created_at) = ?"
+            params.append(str(year))
+
+        conn = get_connection()
+        rows = conn.execute(f"""
+            SELECT strftime('{date_format}', i.created_at) as period,
+                   SUM(ii.quantity) as total
+            FROM invoice_items ii
+            JOIN invoices i ON i.id = ii.invoice_id
+            WHERE ii.item_type = 'product'
+              {where_clause}
+            GROUP BY period
+            ORDER BY period
+        """, params).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]

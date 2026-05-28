@@ -1,4 +1,4 @@
-from models.Product_model import ProductModel
+from models.product_model import ProductModel
 
 
 class ProductController:
@@ -29,4 +29,3 @@ class ProductController:
     def delete(self, product_id):
         self.model.delete(product_id)
         return True, "Da xoa san pham!"
-

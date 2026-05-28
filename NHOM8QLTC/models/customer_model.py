@@ -56,3 +56,28 @@ class CustomerModel:
         count = conn.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
         conn.close()
         return count
+
+    def get_customer_count_by_period(self, period, year):
+        formats = {
+            "week": "%Y-W%W",
+            "month": "%Y-%m",
+            "year": "%Y",
+        }
+        date_format = formats.get(period, "%Y-%m")
+        params = []
+        where_clause = ""
+        if period in ("week", "month"):
+            where_clause = "WHERE strftime('%Y', created_at) = ?"
+            params.append(str(year))
+
+        conn = get_connection()
+        rows = conn.execute(f"""
+            SELECT strftime('{date_format}', created_at) as period,
+                   COUNT(*) as total
+            FROM customers
+            {where_clause}
+            GROUP BY period
+            ORDER BY period
+        """, params).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]

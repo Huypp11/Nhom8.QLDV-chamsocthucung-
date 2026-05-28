@@ -113,13 +113,16 @@ class AppointmentDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Đặt Lịch Hẹn")
-        self.setFixedSize(400, 280)
+        self.setFixedSize(430, 320)
         layout = QFormLayout(self)
 
         self._customer_ids = []
+        self._customers = []
         self._pet_ids = []
         self._service_ids = []
 
+        self.customer_search_input = QLineEdit()
+        self.customer_search_input.setPlaceholderText("Tim theo ten hoac so dien thoai...")
         self.customer_combo = QComboBox()
         self.pet_combo      = QComboBox()
         self.service_combo  = QComboBox()
@@ -129,7 +132,9 @@ class AppointmentDialog(QDialog):
         self.note_input = QLineEdit()
 
         self._load_customers()
+        self.customer_search_input.textChanged.connect(self._filter_customers)
         self.customer_combo.currentIndexChanged.connect(self._load_pets)
+        layout.addRow("Tim khach:", self.customer_search_input)
 
         layout.addRow("Khách hàng:", self.customer_combo)
         layout.addRow("Thú cưng:",   self.pet_combo)
@@ -147,14 +152,40 @@ class AppointmentDialog(QDialog):
         layout.addRow("", btn_layout)
 
     def _load_customers(self):
-        customers = AppointmentController().get_customers()
+        self._customers = AppointmentController().get_customers()
+        self._fill_customer_combo(self._customers)
+        self._load_services()
+
+    def _fill_customer_combo(self, customers):
+        current_index = self.customer_combo.currentIndex()
+        current_customer_id = (
+            self._customer_ids[current_index]
+            if 0 <= current_index < len(self._customer_ids)
+            else None
+        )
+        self.customer_combo.blockSignals(True)
         self.customer_combo.clear()
         self._customer_ids = []
         for c in customers:
-            self.customer_combo.addItem(c["name"])
+            phone = c.get("phone") or "Chua co SDT"
+            self.customer_combo.addItem(f"{c['name']} - {phone}")
             self._customer_ids.append(c["id"])
+        if current_customer_id in self._customer_ids:
+            self.customer_combo.setCurrentIndex(self._customer_ids.index(current_customer_id))
+        self.customer_combo.blockSignals(False)
         self._load_pets()
-        self._load_services()
+
+    def _filter_customers(self):
+        keyword = self.customer_search_input.text().strip().lower()
+        if keyword:
+            customers = [
+                c for c in self._customers
+                if keyword in (c.get("name") or "").lower()
+                or keyword in (c.get("phone") or "").lower()
+            ]
+        else:
+            customers = self._customers
+        self._fill_customer_combo(customers)
 
     def _load_pets(self):
         idx = self.customer_combo.currentIndex()

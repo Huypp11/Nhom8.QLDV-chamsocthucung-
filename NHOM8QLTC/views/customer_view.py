@@ -13,6 +13,7 @@ class CustomerView(QWidget, Ui_CustomerWidget):
         super().__init__()
         self.setupUi(self)
         self.controller = CustomerController()
+        self.refresh_btn.setText("Làm mới")
         self._connect_signals()
         self.load_data()
 
@@ -20,13 +21,18 @@ class CustomerView(QWidget, Ui_CustomerWidget):
         self.add_btn.clicked.connect(self.add_customer)
         self.edit_btn.clicked.connect(self.edit_customer)
         self.delete_btn.clicked.connect(self.delete_customer)
-        self.refresh_btn.clicked.connect(self.load_data)
+        self.refresh_btn.clicked.connect(self.refresh_customers)
         self.search_btn.clicked.connect(self.search_customers)
         self.search_input.returnPressed.connect(self.search_customers)
 
     def load_data(self, data=None):
         rows = data if data is not None else self.controller.get_all()
         self._fill_table(rows)
+
+    def refresh_customers(self):
+        self.search_input.clear()
+        self.load_data()
+        self.table.clearSelection()
 
     def _fill_table(self, rows):
         self.table.setRowCount(0)

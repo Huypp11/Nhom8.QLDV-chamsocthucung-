@@ -51,7 +51,8 @@ def init_db():
             name        TEXT NOT NULL,
             description TEXT,
             price       REAL NOT NULL DEFAULT 0,
-            duration    INTEGER DEFAULT 30
+            duration    INTEGER DEFAULT 30,
+            species_category TEXT DEFAULT 'Tat ca'
         );
 
         CREATE TABLE IF NOT EXISTS appointments (
@@ -110,6 +111,7 @@ def init_db():
     """)
 
     _migrate_invoices_table(cursor)
+    _migrate_services_table(cursor)
 
     admin_exists = cursor.execute(
         "SELECT 1 FROM users WHERE role = 'admin' LIMIT 1"
@@ -125,7 +127,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database initialized successfully!")
+    print("Database khởi tạo thành công rồi hehe!")
 
 
 def _migrate_invoices_table(cursor):
@@ -165,3 +167,16 @@ def _migrate_invoices_table(cursor):
         DROP TABLE invoices;
         ALTER TABLE invoices_new RENAME TO invoices;
     """)
+
+
+def _migrate_services_table(cursor):
+    """Them danh muc loai thu cung cho dich vu neu database da co san."""
+    columns = cursor.execute("PRAGMA table_info(services)").fetchall()
+    if not columns:
+        return
+
+    has_species_category = any(col["name"] == "species_category" for col in columns)
+    if not has_species_category:
+        cursor.execute(
+            "ALTER TABLE services ADD COLUMN species_category TEXT DEFAULT 'Tat ca'"
+        )

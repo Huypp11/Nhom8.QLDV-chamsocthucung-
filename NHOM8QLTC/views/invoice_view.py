@@ -1,6 +1,8 @@
 """
 Tầng 3 - VIEW: Giao diện quản lý hóa đơn (có tích hợp sản phẩm)
 """
+import unicodedata
+
 from PyQt5.QtWidgets import (QWidget, QDialog, QFormLayout, QComboBox, QDoubleSpinBox,
                              QSpinBox, QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
                              QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox,
@@ -186,12 +188,20 @@ class InvoiceDialog(QDialog):
         self._appointments = []
         self._customer_ids = []
         self._customers = []
+        self._pet_ids = []
+        self._pets = []
+        self._service_items = []
         self._items = []          # list of dict: item_type, item_id, item_name, quantity, unit_price
         self._setup_ui()
         self._load_customers()
         self._load_appointments()
         self._load_services()
         self._load_products()
+
+    def _normalize_species(self, value):
+        text = unicodedata.normalize("NFD", value or "")
+        text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+        return text.strip().lower()
 
     # ----------------------------------------------------------- Setup UI --
     def _setup_ui(self):
@@ -207,10 +217,14 @@ class InvoiceDialog(QDialog):
         self.appointment_search_input.setPlaceholderText("Tim lich hen theo ten khach hoac so dien thoai...")
         self.appointment_search_input.textChanged.connect(self._filter_appointments)
         self.appointment_combo = QComboBox()
+        self.appointment_combo.currentIndexChanged.connect(self._refresh_service_combo)
         self.customer_search_input = QLineEdit()
         self.customer_search_input.setPlaceholderText("Tim khach theo ten hoac so dien thoai...")
         self.customer_search_input.textChanged.connect(self._filter_customers)
         self.customer_combo = QComboBox()
+        self.customer_combo.currentIndexChanged.connect(self._load_pets_for_selected_customer)
+        self.pet_combo = QComboBox()
+        self.pet_combo.currentIndexChanged.connect(self._refresh_service_combo)
         self.payment_combo     = QComboBox()
         info_form.addRow("Loai hoa don:", self.invoice_mode_combo)
         info_form.addRow("Tim khach:", self.appointment_search_input)
@@ -219,6 +233,7 @@ class InvoiceDialog(QDialog):
         info_form.addRow("Phương thức TT:",     self.payment_combo)
         info_form.addRow("Tim KH truc tiep:", self.customer_search_input)
         info_form.addRow("Khach truc tiep:", self.customer_combo)
+        info_form.addRow("Thu cung:", self.pet_combo)
         main_layout.addWidget(info_group)
         self._toggle_invoice_mode()
 
@@ -311,6 +326,8 @@ class InvoiceDialog(QDialog):
         self.appointment_combo.setEnabled(not direct_mode)
         self.customer_search_input.setEnabled(direct_mode)
         self.customer_combo.setEnabled(direct_mode)
+        self.pet_combo.setEnabled(direct_mode)
+        self._refresh_service_combo()
 
     def _load_customers(self):
         self._customers = InvoiceController().get_customers()
@@ -323,6 +340,7 @@ class InvoiceDialog(QDialog):
             phone = c.get("phone") or "Chua co SDT"
             self.customer_combo.addItem(f"{c['name']} - {phone}")
             self._customer_ids.append(c["id"])
+        self._load_pets_for_selected_customer()
 
     def _filter_customers(self):
         keyword = self.customer_search_input.text().strip().lower()
@@ -332,6 +350,23 @@ class InvoiceDialog(QDialog):
             or keyword in (c.get("phone") or "").lower()
         ] if keyword else self._customers
         self._fill_customer_combo(matched)
+
+    def _load_pets_for_selected_customer(self):
+        self.pet_combo.clear()
+        self._pet_ids = []
+        self._pets = []
+        idx = self.customer_combo.currentIndex()
+        if idx < 0 or idx >= len(self._customer_ids):
+            self._refresh_service_combo()
+            return
+
+        customer_id = self._customer_ids[idx]
+        self._pets = InvoiceController().get_pets_by_customer(customer_id)
+        for pet in self._pets:
+            species = pet.get("species") or "Chua ro loai"
+            self.pet_combo.addItem(f"{pet['name']} - {species}")
+            self._pet_ids.append(pet["id"])
+        self._refresh_service_combo()
 
     def _load_appointments(self):
         self._appointments = InvoiceController().get_appointments()
@@ -354,12 +389,72 @@ class InvoiceDialog(QDialog):
             or keyword in (a.get("customer_phone") or "").lower()
         ] if keyword else self._appointments
         self._fill_appointment_combo(matched)
+        self._refresh_service_combo()
 
     def _load_services(self):
         self._services = InvoiceController().get_services()
+        self._refresh_service_combo()
+
+    def _current_species(self):
+        direct_mode = self.invoice_mode_combo.currentIndex() == 1
+        if direct_mode:
+            idx = self.pet_combo.currentIndex()
+            if 0 <= idx < len(self._pets):
+                return self._pets[idx].get("species") or ""
+            return ""
+
+        idx = self.appointment_combo.currentIndex()
+        if 0 <= idx < len(self._appointment_ids):
+            appointment_id = self._appointment_ids[idx]
+            appointment = next(
+                (a for a in self._appointments if a.get("id") == appointment_id),
+                None,
+            )
+            if appointment:
+                return appointment.get("pet_species") or ""
+        return ""
+
+    def _refresh_service_combo(self):
+        if not hasattr(self, "service_combo"):
+            return
+        species = self._current_species()
+        services = getattr(self, "_services", [])
+        if species:
+            selected_species = self._normalize_species(species)
+            self._service_items = [
+                s for s in services
+                if self._normalize_species(s.get("species_category") or "Tat ca") == "tat ca"
+                or selected_species.startswith(
+                    self._normalize_species(s.get("species_category") or "")
+                )
+            ]
+        else:
+            self._service_items = []
+
         self.service_combo.clear()
-        for s in self._services:
-            self.service_combo.addItem(f"{s['name']}  ({s['price']:,.0f} đ)")
+        if not self._service_items:
+            self.service_combo.addItem("Chon thu cung de hien dich vu phu hop")
+            self._remove_incompatible_services()
+            return
+
+        for s in self._service_items:
+            species_label = s.get("species_category") or "Tat ca"
+            self.service_combo.addItem(f"{s['name']} - {species_label}  ({s['price']:,.0f} VND)")
+        self._remove_incompatible_services()
+
+    def _remove_incompatible_services(self):
+        if not hasattr(self, "cart_table"):
+            return
+        allowed_ids = {
+            service["id"] for service in getattr(self, "_service_items", [])
+        }
+        kept_items = [
+            item for item in self._items
+            if item["item_type"] != "service" or item["item_id"] in allowed_ids
+        ]
+        if len(kept_items) != len(self._items):
+            self._items = kept_items
+            self._refresh_cart()
 
     def _load_products(self):
         self._products = InvoiceController().get_products()
@@ -370,9 +465,9 @@ class InvoiceDialog(QDialog):
     # ----------------------------------------------- Add / Remove items --
     def _add_service(self):
         idx = self.service_combo.currentIndex()
-        if idx < 0 or idx >= len(self._services):
+        if idx < 0 or idx >= len(self._service_items):
             return
-        s = self._services[idx]
+        s = self._service_items[idx]
         # Nếu dịch vụ đã có thì không thêm lại
         for it in self._items:
             if it["item_type"] == "service" and it["item_id"] == s["id"]:
